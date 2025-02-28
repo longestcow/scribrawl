@@ -26,7 +26,13 @@ public class player : MonoBehaviour
 
         transform.position = position;
         if(grabbed){
-            maskRigidbody.position = position;
+            Vector2 distance = (Vector2)position - maskRigidbody.position;
+            print(distance.magnitude);
+            if(distance.magnitude > 0.08f)
+                maskRigidbody.velocity = distance * 40; // change value based on how big distance is
+            else
+                maskRigidbody.velocity = Vector2.zero;
+            // maskRigidbody.position = position;
         }
 
         if(Input.GetMouseButtonDown(0) && hovering) {
@@ -39,8 +45,7 @@ public class player : MonoBehaviour
             sprite.sprite = hover;
             Vector2 cMousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 diff = cMousePos - pMousePos;
-            maskRigidbody.velocity = (diff).normalized * (diff.magnitude * 100);
-            //figure out new velocity
+            maskRigidbody.velocity = diff * 100;
             
         }
         pMousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -48,7 +53,7 @@ public class player : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject == maskCollider.gameObject){
+        if(collision.gameObject.layer == LayerMask.NameToLayer("grabInner") && !grabbed) {
             hovering = true;
             sprite.sprite = hover;
         }
@@ -56,9 +61,10 @@ public class player : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D collision)
     {
-        if(collision == maskCollider){
+        if(collision.gameObject.layer == LayerMask.NameToLayer("grabOuter")){
             hovering = false;
             sprite.sprite = pointer;
+            grabbed = false;
         }
     }
 

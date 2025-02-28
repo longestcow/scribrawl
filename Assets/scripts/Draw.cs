@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -20,6 +21,7 @@ public class Draw : MonoBehaviour
 
     DollarRecognizer recog;
     GameManager manager;
+    bool started = false;
 
     public player player;
     void Start()
@@ -41,11 +43,12 @@ public class Draw : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Mouse0)){
             if(previousDrawing!=null) Destroy(previousDrawing);
             CreateBrush();
+            started=true;
         }
-        else if (Input.GetKey(KeyCode.Mouse0)){
+        else if (Input.GetKey(KeyCode.Mouse0) && started){
             PointToMousePos();
         }
-        else if (Input.GetKeyUp(KeyCode.Mouse0)){
+        else if (Input.GetKeyUp(KeyCode.Mouse0) && started){
             Vector3[] positions3 = new Vector3[currentLineRenderer.positionCount];
             currentLineRenderer.GetPositions(positions3);
             Vector2[] positions2 = System.Array.ConvertAll<Vector3, Vector2> (positions3, getV2fromV3);
@@ -65,7 +68,8 @@ public class Draw : MonoBehaviour
             if(result.Match==null)
                 return;
             print(result.ToString());
-
+            if(result.Score < 0.6f)
+                return;
             if(result.Match.Name=="rect"){
                 float minX = float.MaxValue, maxX = float.MinValue;
                 float minY = float.MaxValue, maxY = float.MinValue;
@@ -83,13 +87,54 @@ public class Draw : MonoBehaviour
                     new Vector2(maxX, maxY),
                     new Vector2(minX, maxY),
                 };
-                previousDrawing.AddComponent<Rigidbody2D>().gravityScale = 0;
+                Rigidbody2D rb = previousDrawing.AddComponent<Rigidbody2D>();
+                rb.gravityScale = 0;
+                rb.bodyType = RigidbodyType2D.Static;
+                // rb.drag = manager.wallDrag;
+                rb.mass = manager.wallMass;
+                rb.angularDrag = manager.wallDrag;
                 currentLineRenderer.enabled = false;
                 manager.walls.Add(polyCol);
+                previousDrawing.layer = LayerMask.NameToLayer("wall");
+                previousDrawing = null;
+            }
+
+
+            if(result.Match.Name=="arrow"){
+                float angle = result.Angle * -1;
+                if(angle<0)angle=360+angle;
+                print(angle); // get angle like unit circle
+
+                List<Vector2> newPoints = new List<Vector2>(), sortedPoints;
+                if((angle<=45 || angle>=315) || (angle>=135 && angle<=225))     // facing forward or backward
+                    sortedPoints = positions2.OrderBy(p => p.x).ToList();
+                else                                                            // facing up or down
+                    sortedPoints = positions2.OrderBy(p => p.y).ToList();
+                newPoints.Add(sortedPoints.First());
+                newPoints.Add(sortedPoints.Last());
+                newPoints.Add(sortedPoints.Last()+new Vector2(0.01f, 0.01f));
+
+                PolygonCollider2D polyCol = previousDrawing.AddComponent<PolygonCollider2D>();
+                polyCol.points = newPoints.ToArray();
+
+                Rigidbody2D rb = previousDrawing.AddComponent<Rigidbody2D>();
+                rb.gravityScale = 0;
+                rb.drag = manager.arrowDrag;
+                rb.mass = manager.arrowMass;
+                rb.freezeRotation = true;
+
+                previousDrawing.transform.position = newPoints[0];
+                currentLineRenderer.enabled = false;
+                manager.arrows.Add(polyCol);
+                previousDrawing.transform.position = Vector3.zero;
+                rb.velocity = new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad), 0f) * manager.arrowVelocity;
+                previousDrawing.layer = LayerMask.NameToLayer("arrow");
+                previousDrawing.AddComponent<arrow>();
                 previousDrawing = null;
             }
 
             currentLineRenderer = null;
+            started=false;
         }
         else  {
             currentLineRenderer = null;

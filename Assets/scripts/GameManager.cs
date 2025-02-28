@@ -7,7 +7,14 @@ public class GameManager : MonoBehaviour
 {
     [HideInInspector] public DollarRecognizer dollar = new DollarRecognizer();
     [HideInInspector] public string data = "Assets/Resources/trainingData.txt";
-    [HideInInspector] public List<PolygonCollider2D> walls = new List<PolygonCollider2D>();
+    [HideInInspector] public List<PolygonCollider2D> walls = new List<PolygonCollider2D>(), arrows = new List<PolygonCollider2D>();
+    [Header("wall")] 
+    public float wallMass;
+    public float wallDrag;
+    [Header("arrow")] 
+    public float arrowMass;
+    public float arrowDrag;
+    public float arrowVelocity;
     void Start() // load txt file into dollar
     {
         if(!File.Exists(data)){
@@ -43,19 +50,32 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if(walls.Count>0){
-            foreach(PolygonCollider2D col in walls){
-                Vector2[] points = col.points; 
+        foreach(PolygonCollider2D col in walls){
+            if(col == null) continue;
+            Vector2[] points = col.points; 
 
-                for (int i = 0; i < points.Length; i++) {
-                    
-                    Vector2 a = col.transform.TransformPoint(points[i]);
-                    Vector2 b = col.transform.TransformPoint(points[(i + 1) % points.Length]); 
+            for (int i = 0; i < points.Length; i++) {
+                
+                Vector2 a = col.transform.TransformPoint(points[i]);
+                Vector2 b = col.transform.TransformPoint(points[(i + 1) % points.Length]); 
 
-                    Debug.DrawLine(a, b, Color.white);
-                }
+                Debug.DrawLine(a, b, Color.white);
             }
         }
+        foreach(PolygonCollider2D col in arrows){
+            if(col == null) continue;
+
+            Vector2[] points = col.points; 
+
+            for (int i = 0; i < points.Length; i++) {
+                
+                Vector2 a = col.transform.TransformPoint(points[i]);
+                Vector2 b = col.transform.TransformPoint(points[(i + 1) % points.Length]); 
+
+                Debug.DrawLine(a, b, Color.white);
+            }
+        }
+        
     }
 
 }

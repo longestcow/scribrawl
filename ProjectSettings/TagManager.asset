@@ -11,12 +11,12 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - player
+  - floor
+  - arrow
+  - wall
+  - grabInner
+  - grabOuter
   - 
   - 
   - 
